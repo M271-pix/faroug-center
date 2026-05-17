@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="main-title">مركز الفاروق لتحفيظ القرآن الكريم</title>
+    <!-- Google Fonts - Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS لتصدير ملفات الإكسل -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- ملف التنسيق الخارجي -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="light">
+
+    <!-- ==================== 0. شاشة الترحيب (Splash Screen) ==================== -->
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <i class="fa-solid fa-book-quran"></i>
+            </div>
+            <h1 class="splash-title">مركز الفاروق</h1>
+            <p class="splash-subtitle">لتحفيظ القرآن الكريم وعلومه</p>
+            <div class="splash-loader"></div>
+        </div>
+    </div>
+
+    <!-- ==================== شاشة تسجيل الدخول الموحدة (Login Gateway) ==================== -->
+    <div id="login-gateway" class="gateway-container">
+        <div class="gateway-card">
+            <div class="gateway-header">
+                <i class="fa-solid fa-mosque gateway-icon"></i>
+                <h2>بوابة دخول مركز الفاروق</h2>
+                <p>الرجاء اختيار فئة الدخول للمنصة التعليمية</p>
+            </div>
+            
+            <!-- أزرار الاختيار الثلاثية المبدئية -->
+            <div class="gateway-roles" id="gateway-roles-selection">
+                <button class="g-role-btn" onclick="showLoginForm('admin')">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>المشرف العام</span>
+                </button>
+                <button class="g-role-btn" onclick="showLoginForm('teacher')">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                    <span>المحفظون</span>
+                </button>
+                <button class="g-role-btn" onclick="enterAsStudent()">
+                    <i class="fa-solid fa-user-graduate"></i>
+                    <span>الطلاب وأولياء الأمور</span>
+                </button>
+            </div>
+
+            <!-- نموذج تسجيل دخول المشرف -->
+            <div id="form-block-admin" class="auth-form-block">
+                <h3>تسجيل دخول المشرف</h3>
+                <input type="text" id="login-admin-user" placeholder="اسم المستخدم (admin123)">
+                <input type="password" id="login-admin-pass" placeholder="كلمة المرور (admin)">
+                <div class="btn-group-vertical">
+                    <button class="btn btn-primary" onclick="verifyAdminLogin()">دخول المنصة</button>
+                    <button class="btn btn-back" onclick="backToRoles()"><i class="fa-solid fa-arrow-left"></i> عودة</button>
+                </div>
+            </div>
+
+            <!-- نموذج تسجيل دخول المحفظ -->
+            <div id="form-block-teacher" class="auth-form-block">
+                <h3>تسجيل دخول المحفظين</h3>
+                <input type="number" id="login-teacher-id" placeholder="أدخل رقم الهوية المسجل بالمنصة">
+                <div class="btn-group-vertical">
+                    <button class="btn btn-primary" onclick="verifyTeacherLogin()">تحقق ودخول</button>
+                    <button class="btn btn-back" onclick="backToRoles()"><i class="fa-solid fa-arrow-left"></i> عودة</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== الواجهة الرئيسية للموقع (تظهر بعد الدخول الناجح) ==================== -->
+    <div id="app-content" style="display: none;">
+        <!-- شريط التنقل العلوي -->
+        <header>
+            <div class="navbar">
+                <div class="logo">
+                    <i class="fa-solid fa-book-quran"></i>
+                    <span id="logo-text">مركز الفاروق</span>
+                </div>
+                <!-- أزرار تبديل الواجهات المعروضة بناءً على الصلاحية المصرحة -->
+                <div class="role-selector" id="main-role-nav">
+                    <button class="role-btn" onclick="switchRole('admin')" id="btn-role-admin"><i class="fa-solid fa-user-shield"></i> المشرف</button>
+                    <button class="role-btn" onclick="switchRole('teacher')" id="btn-role-teacher"><i class="fa-solid fa-chalkboard-user"></i> المحفظ</button>
+                    <button class="role-btn" onclick="switchRole('student')" id="btn-role-student"><i class="fa-solid fa-user-graduate"></i> الطالب</button>
+                </div>
+                <div class="nav-controls">
+                    <button class="btn-icon" onclick="logoutSession()"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    <button class="btn-icon" id="theme-toggle"><i class="fa-solid fa-moon"></i></button>
+                    <button class="btn-icon" id="lang-toggle"><i class="fa-solid fa-globe"></i> <span id="lang-text">English</span></button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            
+            <!-- ==================== 1. واجهة المشرف (ADMIN) ==================== -->
+            <section id="panel-admin" class="panel-section">
+                <h2 class="panel-title" id="admin-main-heading"><i class="fa-solid fa-user-shield"></i> لوحة تحكم المشرف العام</h2>
+                
+                <div class="dashboard-grid">
+                    <!-- إضافة محفظ -->
+                    <div class="card">
+                        <h3 id="add-teacher-title">إضافة محفظ جديد</h3>
+                        <form id="form-add-teacher" onsubmit="addTeacher(event)">
+                            <input type="text" id="t-name" placeholder="الاسم رباعي" required>
+                            <input type="text" id="t-stage" placeholder="المرحلة التعليمية" required>
+                            <input type="number" id="t-id" placeholder="رقم الهوية" required>
+                            <input type="tel" id="t-phone" placeholder="رقم جوال للتواصل" required>
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> <span id="lbl-add-t">إضافة محفظ</span></button>
+                        </form>
+                    </div>
+
+                    <!-- إضافة طالب -->
+                    <div class="card">
+                        <h3 id="add-student-title">إضافة طالب جديد</h3>
+                        <form id="form-add-student" onsubmit="addStudent(event)">
+                            <input type="text" id="s-name" placeholder="الاسم رباعي" required>
+                            <input type="date" id="s-dob" required>
+                            <input type="number" id="s-id" placeholder="رقم هوية الطالب" required>
+                            <input type="tel" id="s-phone" placeholder="رقم جوال للتواصل" required>
+                            <select id="s-teacher" required>
+                                <option value="" disabled selected id="opt-select-t">اختر اسم المحفظ / الحلقة</option>
+                            </select>
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-plus"></i> <span id="lbl-add-s">إضافة طالب</span></button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- إدارة الجداول وإكسل للمشرف -->
+                <div class="card excel-box">
+                    <h3 id="admin-reports-title"><i class="fa-solid fa-file-excel"></i> سجلات وتقارير المركز (تصدير Excel)</h3>
+                    <div class="btn-group">
+                        <button class="btn btn-excel" onclick="exportExcel('attendance-students')"><i class="fa-solid fa-download"></i> <span id="exp-s-att">غیاب الطلاب</span></button>
+                        <button class="btn btn-excel" onclick="exportExcel('attendance-teachers')"><i class="fa-solid fa-download"></i> <span id="exp-t-att">غياب المحفظين</span></button>
+                        <button class="btn btn-excel" onclick="exportExcel('logs')"><i class="fa-solid fa-download"></i> <span id="exp-s-log">سجل الحفظ اليومي</span></button>
+                    </div>
+                </div>
+
+                <!-- رصد حضور غياب المحفظين من المشرف -->
+                <div class="card">
+                    <h3 id="t-att-title">رصد الحضور اليومي للمحفظين</h3>
+                    <table class="data-table" id="table-teachers-attendance">
+                        <thead>
+                            <tr>
+                                <th id="th-t-name">المحفظ</th>
+                                <th id="th-t-status">الحالة اليومية</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-teachers-attendance"></tbody>
+                    </table>
+                    <button class="btn btn-primary" style="margin-top:15px;" onclick="saveTeachersAttendance()" id="btn-save-t-att">حفظ حضور المحفظين</button>
+                </div>
+            </section>
+
+            <!-- ==================== 2. واجهة المحفظ (TEACHER) ==================== -->
+            <section id="panel-theme-teacher" class="panel-section">
+                <h2 class="panel-title" id="teacher-main-heading"><i class="fa-solid fa-chalkboard-user"></i> لوحة تحكم المحفظ</h2>
+                
+                <div class="card" id="teacher-static-head" style="display:none;">
+                    <h3 id="lbl-welcome-teacher">أهلاً بك يا فضيلة الشيخ: <span id="active-teacher-name" style="color:var(--accent-gold)"></span></h3>
+                </div>
+
+                <div id="circle-container" style="display: none;">
+                    <!-- رصد حضور الطلاب والتسميع اليومي -->
+                    <div class="card">
+                        <h3 id="circle-students-title">طلاب الحلقة المسجلين (رصد الحضور والحفظ اليومي)</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th id="th-s-name">الطالب</th>
+                                    <th id="th-s-att">الحضور</th>
+                                    <th id="th-s-saved">مقدار الحفظ اليومي (صفحات)</th>
+                                    <th id="th-s-rate">التقييم (من 10)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-circle-students"></tbody>
+                        </table>
+                        
+                        <div class="btn-group" style="margin-top: 15px;">
+                            <button class="btn btn-primary" onclick="saveCircleData()" id="btn-save-circle">حفظ سجل اليوم</button>
+                            <button class="btn btn-whatsapp" onclick="sendToWhatsApp('attendance')"><i class="fa-brands fa-whatsapp"></i> <span id="btn-wa-att">إرسال الغياب للواتس لمشرف المرحلة</span></button>
+                            <button class="btn btn-whatsapp" onclick="sendToWhatsApp('progress')"><i class="fa-brands fa-whatsapp"></i> <span id="btn-wa-log">إرسال الحفظ للواتس لمشرف المرحلة</span></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 3. واجهة الطالب (STUDENT) ==================== -->
+            <section id="panel-student" class="panel-section">
+                <h2 class="panel-title" id="student-main-heading"><i class="fa-solid fa-user-graduate"></i> لوحة المتابعة للطلاب وأولياء الأمور</h2>
+                
+                <div class="card" id="student-search-block">
+                    <h3 id="lbl-enter-s-id">أدخل رقم هوية الطالب لاستعراض بطاقة المتابعة:</h3>
+                    <div style="display:flex; gap:10px;">
+                        <input type="number" id="search-student-id" placeholder="رقم الهوية المكون من 9 أرقام">
+                        <button class="btn btn-primary" onclick="viewStudentProfile()" id="btn-view-profile">استعراض</button>
+                    </div>
+                </div>
+
+                <div id="student-profile-box" style="display:none;">
+                    <div class="dashboard-grid">
+                        <!-- معلومات الطالب الشخصية -->
+                        <div class="card info-card">
+                            <h3 id="s-card-personal-title"><i class="fa-solid fa-id-card"></i> البيانات الشخصية</h3>
+                            <p><strong id="p-s-name">الاسم:</strong> <span id="prof-name"></span></p>
+                            <p><strong id="p-s-dob">تاريخ الميلاد:</strong> <span id="prof-dob"></span></p>
+                            <p><strong id="p-s-national">رقم الهوية:</strong> <span id="prof-id"></span></p>
+                            <p><strong id="p-s-phone">رقم الجوال:</strong> <span id="prof-phone"></span></p>
+                            <p><strong id="p-s-t">المحفظ الحالي:</strong> <span id="prof-teacher"></span></p>
+                        </div>
+
+                        <!-- ميزان الأداء والرسوم البيانية التفاعلية التراكمية التاريخية -->
+                        <div class="card">
+                            <h3 id="s-card-chart-title"><i class="fa-solid fa-chart-line"></i> منحنى التقييم البياني التراكمي</h3>
+                            <div class="btn-group" style="margin-bottom:10px;">
+                                <button class="btn btn-icon active" onclick="updateChartFilter('weekly')" id="filter-weekly">أسبوعي</button>
+                                <button class="btn btn-icon" onclick="updateChartFilter('monthly')" id="filter-monthly">شهري</button>
+                                <button class="btn btn-icon" onclick="updateChartFilter('yearly')" id="filter-yearly">سنوي</button>
+                            </div>
+                            <div class="chart-container" style="position: relative; height:250px; width:100%">
+                                <canvas id="studentProgressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            <p id="footer-text">جميع الحقوق محفوظة © - مركز الفاروق لتحفيظ القرآن الكريم وعلومه 2026</p>
+        </footer>
+    </div>
+
+    <!-- ملف التشغيل التفاعلي البرمجي -->
+    <script src="script.js"></script>
+</body>
+</html>
